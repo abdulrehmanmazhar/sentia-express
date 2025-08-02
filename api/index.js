@@ -1,34 +1,26 @@
 import { loadEnvFile } from "node:process";
 
-// ✅ Load .env only if required variables are missing
-const requiredEnv = ["PORT", "MONGO_URI", "STRIPE_SECRET_KEY"];
-let missingEnv = [];
+const MODE = process.env.MODE || "dev";
 
-for (const key of requiredEnv) {
-  if (!process.env[key]) {
-    missingEnv.push(key);
-  }
+if (MODE === "dev") {
+  await loadEnvFile();
+  console.log("✅ Loaded .env file for development");
 }
 
+const requiredEnv = ["MONGO_URI", "STRIPE_SECRET_KEY"];
+const missingEnv = requiredEnv.filter((key) => !process.env[key]);
 if (missingEnv.length > 0) {
-  console.warn("⚠️ Missing env variables, loading from .env...");
-  loadEnvFile();
-  // Check again after loading .env
-  missingEnv = missingEnv.filter((key) => !process.env[key]);
-  if (missingEnv.length > 0) {
-    throw new Error(`❌ Missing required environment variables: ${missingEnv.join(", ")}`);
-  }
+  throw new Error(`❌ Missing required environment variables: ${missingEnv.join(", ")}`);
 }
 
+// ✅ Dynamic imports to respect env loading
+const express = (await import("express")).default;
+const cors = (await import("cors")).default;
+const { default: connectDB } = await import("../src/config/db.js");
+const { default: authRoutes } = await import("../src/routes/authRoutes.js");
+const { default: paymentRoutes } = await import("../src/routes/paymentRoutes.js");
 
-import express from "express";
-import cors from "cors";
-import connectDB from "../src/config/db.js";
-import authRoutes from "../src/routes/authRoutes.js";
-import paymentRoutes from "../src/routes/paymentRoutes.js";
-
-
-connectDB();
+await connectDB();
 
 const app = express();
 app.use(cors());
@@ -37,4 +29,4 @@ app.use("/api/auth", authRoutes);
 app.use("/api/payment", paymentRoutes);
 
 const PORT = process.env.PORT;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
