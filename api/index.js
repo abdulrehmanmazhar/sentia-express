@@ -1,10 +1,22 @@
 import { loadEnvFile } from "node:process";
-loadEnvFile();
 
+// ✅ Load .env only if required variables are missing
 const requiredEnv = ["PORT", "MONGO_URI", "STRIPE_SECRET_KEY"];
+let missingEnv = [];
+
 for (const key of requiredEnv) {
   if (!process.env[key]) {
-    throw new Error(`❌ Missing required environment variable: ${key}`);
+    missingEnv.push(key);
+  }
+}
+
+if (missingEnv.length > 0) {
+  console.warn("⚠️ Missing env variables, loading from .env...");
+  loadEnvFile();
+  // Check again after loading .env
+  missingEnv = missingEnv.filter((key) => !process.env[key]);
+  if (missingEnv.length > 0) {
+    throw new Error(`❌ Missing required environment variables: ${missingEnv.join(", ")}`);
   }
 }
 
