@@ -2,13 +2,10 @@
   "name": "express-sentia",
   "version": "1.0.0",
   "description": "This is an auth server for sentia quizzes app",
-  "main": "dist/api/index.js",
+  "main": "api/index.js",
+  "type": "module",
   "scripts": {
-    "dev": "ts-node-dev --respawn --transpile-only api/index.ts",
-    "build": "tsc",
-    "start": "node dist/api/index.js",
-    "watch": "tsc --watch",
-    "lint": "eslint --ext .ts api src"
+    "start": "node --env-file=.env api/index.js"
   },
   "author": "Abdur Rahman",
   "license": "ISC",
@@ -21,12 +18,5 @@
     "stripe": "^18.4.0"
   },
   "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.3",
-    "@types/node": "^24.1.0",
-    "@types/node-fetch": "^2.6.13",
-    "ts-node": "^10.9.2",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.9.2"
   }
 }
