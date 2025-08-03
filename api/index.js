@@ -24,9 +24,10 @@ await connectDB();
 
 const app = express();
 app.use(cors());
+app.post("/api/payment/webhook", express.raw({ type: 'application/json' }), (await import("../src/controllers/paymentController.js")).handleWebhook);
 app.use(express.json());
-app.use("/api/auth", authRoutes);
 app.use("/api/payment", paymentRoutes);
+app.use("/api/auth", authRoutes);
 
 const PORT = process.env.PORT;
 app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));
