@@ -126,3 +126,40 @@ export const startGoogleLogin = (req, res) => {
   // res.redirect(authUrl);
   res.json({ authUrl });
 };
+
+export const refreshAccessToken = async (req, res) => {
+  try {
+    const { refresh_token } = req.body;
+    if (!refresh_token) {
+      return res.status(400).json({ error: "Missing refresh token" });
+    }
+
+    // Request new tokens from Google
+    const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
+        refresh_token,
+        grant_type: "refresh_token"
+      })
+    });
+
+    const newTokens = await tokenRes.json();
+
+    if (!newTokens.access_token) {
+      return res.status(400).json({ error: "Failed to refresh token", details: newTokens });
+    }
+
+    // Calculate new expiry time
+    if (newTokens.expires_in) {
+      newTokens.expiry_date = Date.now() + newTokens.expires_in * 1000;
+    }
+
+    return res.json({ success: true, tokens: newTokens });
+  } catch (err) {
+    console.error("Refresh Token Error:", err);
+    res.status(500).json({ error: "Failed to refresh token" });
+  }
+};
