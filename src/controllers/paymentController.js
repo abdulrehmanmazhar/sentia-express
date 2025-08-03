@@ -66,39 +66,48 @@ export const createCheckoutSession = async (req, res) => {
 
 export const handleWebhook = async (req, res) => {
   const sig = req.headers["stripe-signature"];
-  let event;
 
+  let event;
   try {
     event = stripe.webhooks.constructEvent(
-      req.body,
+      req.body, // raw body
       sig,
       process.env.STRIPE_WEBHOOK_SECRET
     );
+  } catch (err) {
+    console.error("Webhook signature verification failed:", err.message);
+    return res.status(400).send(`Webhook Error: ${err.message}`);
+  }
 
+  try {
     switch (event.type) {
-      case 'checkout.session.completed':
+      case "checkout.session.completed": {
         const session = event.data.object;
-        
-        // Additional verification
-        if (session.payment_status === 'paid') {
-          await User.findOneAndUpdate(
-            { email: session.customer_email },
-            { 
-              paymentDone: true,
-              paymentDetails: {
-                amount_paid: session.amount_total / 100,
-                currency: session.currency,
-                promo_code: session.metadata.promo_code
+
+        if (session.payment_status === "paid") {
+          // Get userId from metadata instead of email if possible
+          const userEmail = session.customer_email;
+          
+          await User.updateOne(
+            { email: userEmail },
+            {
+              $set: {
+                paymentDone: true,
+                "paymentDetails.amount_paid": session.amount_total / 100,
+                "paymentDetails.currency": session.currency,
+                "paymentDetails.promo_code": session.metadata?.promo_code || null,
+                stripeSessionId: session.id
               }
             }
           );
-          
-          // Here you could trigger email confirmation, etc.
+
+          console.log(`Payment successful for ${userEmail}`);
         }
         break;
+      }
 
-      case 'checkout.session.async_payment_failed':
-        // Handle failed payments
+      case "checkout.session.async_payment_failed":
+        console.warn("Async payment failed:", event.data.object.id);
         break;
 
       default:
@@ -106,9 +115,8 @@ export const handleWebhook = async (req, res) => {
     }
 
     res.json({ received: true });
-
   } catch (err) {
-    console.error("Webhook error:", err.message);
-    res.status(400).send(`Webhook Error: ${err.message}`);
+    console.error("Webhook handling error:", err.message);
+    res.status(500).send("Internal Server Error");
   }
 };
