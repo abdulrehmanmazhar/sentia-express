@@ -4,5 +4,5 @@ import { oauthCallback, refreshAccessToken, startGoogleLogin } from "../controll
 const router = Router();
 router.get("/oauth2callback", oauthCallback);
 router.get("/startGoogleLogin", startGoogleLogin);
-router.get("/refresh-token", refreshAccessToken);
+router.post("/refresh-token", refreshAccessToken);
 export default router;
