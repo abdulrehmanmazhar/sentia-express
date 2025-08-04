@@ -78,6 +78,11 @@ export const oauthCallback = async (req, res) => {
     const tokens = await tokenRes.json();
     if (!tokens.access_token) return res.status(400).json({ error: "Token exchange failed" });
 
+     // Calculate new expiry time
+    if (tokens.expires_in) {
+      tokens.expiry_date = Date.now() + tokens.expires_in * 1000;
+    }
+
     // 2️⃣ Get user info
     const userInfoRes = await fetch("https://www.googleapis.com/oauth2/v2/userinfo", {
       headers: { Authorization: `Bearer ${tokens.access_token}` }
